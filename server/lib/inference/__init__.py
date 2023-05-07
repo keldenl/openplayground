@@ -24,9 +24,11 @@ class ProviderDetails:
     '''
     Args:
         api_key (str): API key for provider
+        base_url (str): custom base url for provider
         version_key (str): version key for provider
     '''
     api_key: str
+    base_url: str
     version_key: str
 
 @dataclass
@@ -200,6 +202,9 @@ class InferenceManager:
     
     def __openai_chat_generation__(self, provider_details: ProviderDetails, inference_request: InferenceRequest):
         openai.api_key = provider_details.api_key
+        if provider_details.base_url is not None:
+            openai.api_base = provider_details.base_url
+
 
         current_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -257,6 +262,8 @@ class InferenceManager:
 
     def __openai_text_generation__(self, provider_details: ProviderDetails, inference_request: InferenceRequest):
         openai.api_key = provider_details.api_key
+        if provider_details.base_url is not None:
+            openai.api_base = provider_details.base_url
 
         response = openai.Completion.create(
             model=inference_request.model_name,
@@ -275,36 +282,41 @@ class InferenceManager:
         for event in response:
             generated_token = event['choices'][0]['text']
             infer_response = None
+            probability = None
+            prob_dist = None
             try:
-                chosen_log_prob = 0
-                likelihood = event['choices'][0]["logprobs"]['top_logprobs'][0]
+                if event['choices'][0]['logprobs'] is not None:
+                    chosen_log_prob = 0
+                    likelihood = event['choices'][0]["logprobs"]['top_logprobs'][0]
 
-                prob_dist = ProablityDistribution(
-                    log_prob_sum=0, simple_prob_sum=0, tokens={},
-                )
+                    prob_dist = ProablityDistribution(
+                        log_prob_sum=0, simple_prob_sum=0, tokens={},
+                    )
 
-                for token, log_prob in likelihood.items():
-                    simple_prob = round(math.exp(log_prob) * 100, 2)
-                    prob_dist.tokens[token] = [log_prob, simple_prob]
+                    for token, log_prob in likelihood.items():
+                        simple_prob = round(math.exp(log_prob) * 100, 2)
+                        prob_dist.tokens[token] = [log_prob, simple_prob]
 
-                    if token == generated_token:
-                        chosen_log_prob = round(log_prob, 2)
-  
-                    prob_dist.simple_prob_sum += simple_prob
-                
-                prob_dist.tokens = dict(
-                    sorted(prob_dist.tokens.items(), key=lambda item: item[1][0], reverse=True)
-                )
-                prob_dist.log_prob_sum = chosen_log_prob
-                prob_dist.simple_prob_sum = round(prob_dist.simple_prob_sum, 2)
-             
+                        if token == generated_token:
+                            chosen_log_prob = round(log_prob, 2)
+    
+                        prob_dist.simple_prob_sum += simple_prob
+                    
+                    prob_dist.tokens = dict(
+                        sorted(prob_dist.tokens.items(), key=lambda item: item[1][0], reverse=True)
+                    )
+                    prob_dist.log_prob_sum = chosen_log_prob
+                    prob_dist.simple_prob_sum = round(prob_dist.simple_prob_sum, 2)
+
+                    probability = event['choices'][0]['logprobs']['token_logprobs'][0]
+
                 infer_response = InferenceResult(
                     uuid=inference_request.uuid,
                     model_name=inference_request.model_name,
                     model_tag=inference_request.model_tag,
                     model_provider=inference_request.model_provider,
                     token=generated_token,
-                    probability=event['choices'][0]['logprobs']['token_logprobs'][0],
+                    probability=probability,
                     top_n_distribution=prob_dist
                 )
             except IndexError:

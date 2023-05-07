@@ -14,6 +14,7 @@ interface Provider {
   remoteInference: boolean;
   requiresApiKey: boolean;
   apiKey: string;
+  baseUrl: string;
   models: Model[];
   searchUrl: string | null;
 }
@@ -32,8 +33,10 @@ interface ProviderProps {
   providerRequiresAPIKey: boolean;
   providerRemoteInference: boolean;
   apiKey: string;
+  baseUrl: string;
   searchProviderModels: (provider: string, query: string) => void;
   setAPIKey: (key: string) => void;
+  setBaseUrl: (key: string) => void;
   toggleModel: (provider: string, model: string) => void;
 }
 
@@ -115,15 +118,20 @@ const ProviderSearchModels = ({
   )
 }
 
-const ProviderCredentials = ({provider, providerRequiresAPIKey, apiKey, setAPIKey}: ProviderProps) => {
+const ProviderCredentials = ({provider, providerRequiresAPIKey, apiKey, setAPIKey, baseUrl, setBaseUrl}: ProviderProps) => {
   if (!providerRequiresAPIKey) return null;
 
   const [revealAPIKey, setRevealAPIKey] = useState<boolean>(false)
   const [apiKeyCopy, setAPIKeyCopy] = React.useState<string>(apiKey)
+  const [baseUrlCopy, setBaseUrlCopy] = React.useState<string>(baseUrl)
 
   useEffect(() => {
     setAPIKeyCopy(apiKey)
   }, [apiKey])
+
+  useEffect(() => {
+    setBaseUrlCopy(baseUrl)
+  }, [baseUrl])
 
   
   const apiKeyDescription = () => {
@@ -142,9 +150,30 @@ const ProviderCredentials = ({provider, providerRequiresAPIKey, apiKey, setAPIKe
     )
   }
 
+  const baseUrlDescription = () => {
+    if (baseUrl !== null && baseUrl !== "") return null;
+
+    return (
+      <>
+        <p className="text-red-500">
+          <b>No Custom Base url set for {provider}</b>
+        </p>
+            
+        <p>
+          A custom base allows for generation requests to remote servers
+        </p>
+      </>
+    )
+  }
+
   const handleAPIKeySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setAPIKey(apiKeyCopy)
+  }
+
+  const handleBaseUrlSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setBaseUrl(baseUrlCopy)
   }
 
   return (
@@ -171,6 +200,21 @@ const ProviderCredentials = ({provider, providerRequiresAPIKey, apiKey, setAPIKe
               revealAPIKey ? <EyeIcon className="h-5 w-5 align-middle" /> : <EyeOffIcon className="h-5 w-5 align-middle" />
             }
           </div>
+          <Button type="submit">Save</Button>
+        </div>
+      </form>
+      <h3 className="scroll-m-20 text-xl font-extrabold tracking-tight mt-2">
+        Custom Base Url
+      </h3>
+      {baseUrlDescription()}
+      <form onSubmit={handleBaseUrlSubmit}>
+        <div className="flex w-full max-w-lg items-center space-x-2 mt-2">
+          <Input
+            placeholder={`Enter your ${provider} custom base url`}
+            value={baseUrlCopy || ""}
+            onChange={(e) => setBaseUrlCopy(e.target.value)}
+            className="flex text-left placeholder:text-left h-8 w-full rounded-md border border-slate-300 bg-transparent py-2 px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-50 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
+          />
           <Button type="submit">Save</Button>
         </div>
       </form>
@@ -309,6 +353,7 @@ export default function Settings() {
   const [providerName, setProviderName] = React.useState<string>("openai")
   const [providerSearchURL, setProviderSearchURL] = React.useState<any>(null)
   const [providerAPIKey, setProviderAPIKey] = React.useState<string>("")
+  const [providerBaseUrl, setProviderBaseUrl] = React.useState<string>("")
   const [providerRequiresAPIKey, setProviderRequiresAPIKey] = React.useState<boolean>(true)
   const [providerRemoteInference, setProviderRemoteInference] = React.useState<boolean>(true)
   const [providerModels, setProviderModels] = React.useState<any[]>([])
@@ -371,6 +416,7 @@ export default function Settings() {
 
     setProvider(currentProvider)
     setProviderAPIKey(currentProvider.apiKey)
+    setProviderBaseUrl(currentProvider.baseUrl)
     setProviderModels(currentProvider.models)
     setProviderRequiresAPIKey(currentProvider.requiresApiKey)
     setProviderRemoteInference(currentProvider.remoteInference)
@@ -398,6 +444,30 @@ export default function Settings() {
       toast({
         title: "API Key Error",
         description: `There was an error saving your ${provider} API key. ${error}}`,
+      })
+    }
+  }
+
+  const setBaseUrl = async (baseUrl: string ) => { 
+    try {
+      await apiContext.Provider.setBaseUrl(providerName, baseUrl);
+
+      toast({
+        title: "Custom Base Url Saved",
+        description: `${providerName} custom base url is saved and ready for generations!`,
+      })
+      
+      setProviders({
+        ...providers,
+        [providerName]: {
+          ...providers[providerName],
+          baseUrl
+        }
+      })   
+    } catch (error) {
+      toast({
+        title: "Custom Base Url Error",
+        description: `There was an error saving your ${provider} custom base url. ${error}}`,
       })
     }
   }
@@ -481,6 +551,7 @@ export default function Settings() {
 
           <ProviderView
             apiKey={providerAPIKey}
+            baseUrl={providerBaseUrl}
             provider={providerName}
             providerRequiresAPIKey={providerRequiresAPIKey}
             providerRemoteInference={providerRemoteInference}
@@ -490,6 +561,7 @@ export default function Settings() {
 
             searchProviderModels={searchProviderModels}
             setAPIKey = {setAPIKey}
+            setBaseUrl = {setBaseUrl}
             toggleModel = {toggleModel}
           />
 

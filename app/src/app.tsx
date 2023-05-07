@@ -185,6 +185,9 @@ const APIContextWrapper = ({children}) => {
     setAPIKey: async (provider, apiKey) => (await fetch(`/api/provider/${provider}/api-key`, {method: "PUT", headers: {"Content-Type": "application/json"}, 
       body: JSON.stringify({apiKey: apiKey})}
     )).json(),
+    setBaseUrl: async (provider, baseUrl) => (await fetch(`/api/provider/${provider}/base-url`, {method: "PUT", headers: {"Content-Type": "application/json"}, 
+      body: JSON.stringify({baseUrl: baseUrl})}
+    )).json(),
     getAll: async () => (await fetch("/api/providers")).json(),
     getAllWithModels: async () => (await fetch("/api/providers-with-key-and-models")).json(),
   };

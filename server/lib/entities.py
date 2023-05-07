@@ -48,6 +48,7 @@ class Provider:
         self, name: str, models: List[Model], remote_inference: bool = False,
         default_capabilities: List[str] = None, default_parameters: dict = None,
         api_key: str = None, requires_api_key: bool = False,
+        base_url: str = None,
         search_url: str = None
     ):
         self.event_emitter = EventEmitter()
@@ -58,6 +59,7 @@ class Provider:
         self.default_parameters = default_parameters
         self.api_key = api_key
         self.requires_api_key = requires_api_key
+        self.base_url = base_url
         self.search_url = search_url
     
     def has_model(self, model_name: str) -> bool:
@@ -96,6 +98,7 @@ class Provider:
             default_parameters=self.default_parameters.copy() if self.default_parameters else None,
             api_key=self.api_key,
             requires_api_key=self.requires_api_key,
+            base_url=self.base_url,
             search_url=self.search_url
         )
     

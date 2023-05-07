@@ -55,6 +55,7 @@ class Storage:
                     default_parameters=provider.get('defaultParameters', None),
                     api_key=os.environ.get(f'{provider_name.upper()}_API_KEY'),
                     requires_api_key=provider.get("requiresAPIKey", False),
+                    base_url=os.environ.get(f'{provider_name.upper()}_BASE_URL', None),
                     search_url=provider.get('searchURL', None),
                 )
             )
@@ -181,6 +182,20 @@ class Storage:
         load_dotenv(self.env_file_path)
 
         self.event_emitter.emit(EVENTS.PROVIDER_API_KEY_UPDATE, provider_name)
+
+    def update_provider_base_url(self, provider_name: str, base_url: str):
+        provider = self.get_provider(provider_name)
+        if provider is None:
+            raise ValueError(f'Provider {provider_name} not found')
+        provider.base_url = base_url
+
+        if not os.path.exists(self.env_file_path):
+            open(self.env_file_path, 'a').close()
+
+        set_key(self.env_file_path, f'{provider_name.upper()}_BASE_URL', base_url)
+        load_dotenv(self.env_file_path)
+
+        self.event_emitter.emit(EVENTS.PROVIDER_BASE_URL_UPDATE, provider_name)
     
     def __update___(self, event: str, *args, **kwargs):
         if event == EVENTS.MODEL_ADDED:

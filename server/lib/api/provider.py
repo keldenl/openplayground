@@ -138,3 +138,23 @@ def provider_update_api_key(provider_name):
     response = jsonify({'status': 'success'})
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
+
+@provider_bp.route('/<string:provider_name>/base-url', methods=['PUT'])
+def provider_update_base_url_key(provider_name):
+    '''
+    Routes to update the custom base url for a given provider
+    '''
+    logger.info(f"Storing custom base url for {provider_name}")
+
+    data = request.get_json(force=True)
+    storage = g.get('storage')
+
+    base_url = data['baseUrl']
+    if base_url is None:
+        return create_response_message("Invalid custom base url", 400)
+
+    storage.update_provider_base_url(provider_name, base_url)
+
+    response = jsonify({'status': 'success'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response

@@ -290,9 +290,9 @@ class GlobalStateManager:
 
     def text_generation(self, inference_request: InferenceRequest):
         provider = self.storage.get_provider(inference_request.model_provider)
-
         provider_details = ProviderDetails(
-            api_key=provider.api_key ,
+            api_key=provider.api_key,
+            base_url='https://api.openai.com/v1' if provider.base_url is None or len(provider.base_url) == 0 else provider.base_url,
             version_key=None
         )
         logger.info(f"Received inference request {inference_request.model_provider}")
