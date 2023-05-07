@@ -18,7 +18,7 @@ https://user-images.githubusercontent.com/111631/227399583-39b23f48-9823-4571-a9
 ## How to run for development
 
 ```sh
-git clone https://github.com/nat/openplayground
+git clone https://github.com/keldenl/openplayground # or git@github.com:keldenl/openplayground.git for SSH
 cd app && npm install # Install requirements
 npx parcel watch src/index.html --no-cache # Run the front end
 
